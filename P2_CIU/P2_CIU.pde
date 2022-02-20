@@ -1,143 +1,166 @@
-float ball_posX, ball_posY, pos_p1, pos_p2, ball_speed, ball_dirX, ball_dirY;
-int score1, score2;
-boolean enter_pressed;
-float mov_p1=0;
-float mov_p2=0;
+PShape current_shape, previous_shape;
+float fx1,fz1,fx2,fz2;
+boolean enter_pressed, space_pressed, drawing_initiated;
+ArrayList<PVector> coordinates;
 
 void setup(){
+  size(800,800,P3D);
+  previous_shape=null;
   enter_pressed=false;
-  size(800,800);
+  space_pressed=false;
+  drawing_initiated=false;
+  reset_shape();
 }
 
 void draw(){
-  background(128);
-  if(enter_pressed){
-    
-    textAlign(CENTER,CENTER);
-    text(score1+"          "+score2,width/2,height/10);
-    fill(0,128,0);
-    circle(ball_posX,ball_posY,40);
-    fill(128,0,0);
-    rect(45,pos_p1,10,60);
-    fill(0,0,128);
-    rect(755,pos_p2,10,60);
-    
-    pos_p1=pos_p1+(mov_p1*2.5);
-    if(pos_p1<0) pos_p1=0;
-    if(pos_p1>740) pos_p1=740;
-    pos_p2=pos_p2+(mov_p2*2.5);
-    if(pos_p2<0) pos_p2=0;
-    if(pos_p2>740) pos_p2=740;
-    
-    if(ball_posX < 70 && ball_posX > 45){
-      if(ball_posY+8>pos_p1 && ball_posY-68<pos_p1){
-        ball_dirX=1;
-        if(ball_posY-45>pos_p1){
-          ball_dirY=ball_dirY+0.2;
-          ball_speed=ball_speed-0.2;
-          if(ball_speed<1) ball_speed=1;
-          if(ball_dirY>10) ball_dirY=10;
-        } else if(ball_posY-25<pos_p1){
-          ball_dirY=ball_dirY-0.2;
-          ball_speed=ball_speed-0.2;
-          if(ball_speed<1) ball_speed=1;
-          if(ball_dirY<-10) ball_dirY=-10;
-        } else{
-          ball_speed=ball_speed+0.5;
-          if(ball_speed>10)ball_speed=10;
-        }
+  if(drawing_initiated){
+    if(!enter_pressed){
+      draw_previous_revolution();
+    }else{
+      if(space_pressed){
+        draw_revolution();
+      }else{
+        draw_shape();
       }
-    } else if(ball_posX > 730 && ball_posX < 755){
-      if(ball_posY+8>pos_p2 && ball_posY-68<pos_p2){
-        ball_dirX=-1;
-        if(ball_posY-45>pos_p2){
-          ball_dirY=ball_dirY+0.2;
-          ball_speed=ball_speed-0.2;
-          if(ball_speed<1) ball_speed=1;
-          if(ball_dirY>10) ball_dirY=10;
-        } else if(ball_posY-25<pos_p2){
-          ball_dirY=ball_dirY-0.1;
-          ball_speed=ball_speed-0.2;
-          if(ball_speed<1) ball_speed=1;
-          if(ball_dirY<-10) ball_dirY=-10;
-        } else{
-          ball_speed=ball_speed+0.5;
-          if(ball_speed>10)ball_speed=10;
-        }
-      }
-    } else if(ball_posX > 780){
-      score1 = score1+1;
-      resetGame();
-    } else if(ball_posX < 20){
-      score2 = score2+1;
-      resetGame();
     }
-    if(score1 == 10 || score2 ==10){
-      noLoop();
-      finishScreen();
-    }
-      
-    if(ball_posY<20) ball_dirY=abs(ball_dirY);
-    if(ball_posY>780) ball_dirY=-abs(ball_dirY);
-    
-    ball_posX=ball_posX+ball_dirX*ball_speed;
-    ball_posY=ball_posY+ball_dirY*ball_speed;
-    
+    draw_text();
   }else{
-    textAlign(CENTER);
-    text("Bienvenido al juego de PONG",width/2,height/8); 
-    text("Controles",width/2,height/3);
-    text("Teclas UP/DOWN:     Mover al jugador 2 (derecho)",width/2,height/2.4);
-    text("Teclas W/S:     Mover al jugador 1 (izquierdo)",width/2,height/2.2);  
-    text("Enter:     Iniciar / Volver a esta pantalla",width/2,height/2);
-    text("Pulsa enter para iniciar\n",width/2,height/1.5);
+    draw_presentation();
   } 
 }
 
-void finishScreen(){
-  background(128);
-  textAlign(CENTER,CENTER);
-  if(score1==10) text("¡Ha ganado el jugador 1!",width/2,height/6);
-  if(score2==10) text("¡Ha ganado el jugador 2!",width/2,height/6);
-  text("Para volver a jugar, pulse enter",width/2,height/3);
+void draw_presentation(){
+  textAlign(CENTER);
+  text("Programa para dibujar figuras de revolucion",width/2,height/8); 
+  text("Controles",width/2,height/3);
+  text("ENTER: empezar a dibujar, o ver figura anterior",width/2,height/2.4);
+  text("ESPACIO: Terminar dibujo y crear figura, o crear el siguiente dibujo",width/2,height/2.2);  
+  text("Q: Volver a la pantalla de inicio",width/2,height/2);
+  text("R: reiniciar el dibujo actual",width/2,height/1.5);
 }
 
-void resetScore(){
-  score1=0;
-  score2=0;
+void draw_text(){
+  textAlign(CENTER);
+  text("Enter:ver figura anterior",100,height/8); 
+  text("Espacio: acabar figura",100,height/7);
+  text("R: reiniciar dibujo", 100,height/6);
+  text("Q: Volver a inicio", 100,height/5);
 }
 
-void resetGame(){
-  ball_posX=400;
-  ball_posY=400;
-  pos_p1 = 400;
-  pos_p2 = 400;
-  ball_speed = 1;
-  ball_dirX = 1;
-  ball_dirY = 0;
-  if(random(100)>50){
-    ball_dirX=-1;
+void draw_revolution(){
+  background(0);
+  translate(mouseX,mouseY);
+  stroke(255, 0, 0);
+  shape(current_shape);   
+}
+
+void draw_shape(){
+  background(0);
+  stroke(255, 0, 0);
+  for(int i=0;i<coordinates.size();i++){
+    if(coordinates.size() > 1 && i > 0){
+      draw_line(coordinates.get(i-1),coordinates.get(i));
+    }
   }
 }
+
+void draw_previous_revolution(){
+  background(0);
+  if(previous_shape!=null){
+    translate(mouseX,mouseY);
+    stroke(255, 0, 0);
+    shape(previous_shape);
+  }else{
+    textAlign(CENTER);
+    text("no hay forma almacenada",width/2,height/2);
+  }
+}
+
+void reset_shape(){
+  coordinates = new ArrayList();
+  background(0);
+  stroke(255, 0, 0);
+}
+
+void draw_line(PVector v1, PVector v2){
+  line(v1.x,v1.y,v2.x,v2.y);
+}
+
+void finish_revolution(){
+  current_shape=createShape();
+  current_shape.beginShape();
+  current_shape.noFill();
+  for(PVector x : coordinates){
+    fx1=x.x;
+    fz1=0;
+    fx2=0;
+    fz2=0;
+    for(int i = 0;i < 37;i++){
+      current_shape.vertex(fx1/2,(x.y-300)/2,fz1/2);
+      fx2 = fx1*cos(radians(10))-fz1*sin(radians(10));
+      fz2 = fx1*sin(radians(10))+fz1*cos(radians(10));
+      fx1 = fx2;
+      fz1 = fz2;
+    }
+  }
+  for(int i = 0;i< 37;i++){  
+    for(PVector x : coordinates){  
+      fx1=0;
+      fz1=0;
+      fx1 = x.x*cos(radians(i*10))-fz1*sin(radians(i*10));
+      fz1 = x.x*sin(radians(i*10))+fz1*cos(radians(i*10));
+      current_shape.vertex(fx1/2,(x.y-300)/2,fz1/2);
+    }
+  }
+  current_shape.endShape();
+}
+
 
 void keyPressed(){
   if (keyCode == ENTER){
     if (enter_pressed){
       enter_pressed=false;
+      background(0);
+      stroke(255, 0, 0);
     } else {
-      enter_pressed=true;
-      loop();
-      resetGame();
-      resetScore();
+      if(!space_pressed){
+        enter_pressed=true;
+        background(0);
+        stroke(255, 0, 0);
+        reset_shape();
+        if(!drawing_initiated){
+          drawing_initiated=true;
+        }
+      }
     }
   }
-  if (keyCode == UP) mov_p2=-1;
-  if (keyCode == DOWN) mov_p2=1;
-  if (key == 'w' || key == 'W') mov_p1=-1;
-  if (key == 's' || key == 'S') mov_p1=1;
+  if (key == ' '){
+    if(enter_pressed && drawing_initiated){
+      if(space_pressed){
+        space_pressed=false;
+        previous_shape=current_shape;
+        reset_shape();
+      }else{
+        space_pressed=true;
+        finish_revolution();
+      }
+    }
+  }
+  if (key == 'q' || key == 'Q'){
+    if(drawing_initiated){
+      drawing_initiated=false;
+      enter_pressed=false;
+    }
+  }
+  if (key == 'r' || key == 'R'){
+    if(drawing_initiated){
+      reset_shape();
+    }
+  }
 }
 
-void keyReleased(){
-  if (keyCode == UP || keyCode == DOWN) mov_p2 = 0;
-  if (key == 'w' || key == 's') mov_p1 = 0;
+void mousePressed() {
+  if(drawing_initiated && enter_pressed && !space_pressed){
+     coordinates.add (new PVector (mouseX, mouseY));
+  }
 }
